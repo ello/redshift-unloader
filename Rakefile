@@ -6,17 +6,17 @@ require 'yaml'
 START_MONTH = Date.parse('2015-03-01').freeze
 
 def tables
-  Redshift::Client.connection.exec(<<-EOF).to_a.map { |r| [ r['schemaname'], r['tablename'] ] }
-      SELECT schemaname, tablename
-      FROM pg_tables
-      WHERE schemaname NOT IN ('pg_catalog', 'information_schema', 'mailchimp')
-      AND tablename NOT IN ('users')
-      ORDER BY schemaname, tablename
-  EOF
-end
-
-def only_tables
-  @only_tables ||= (ENV['ONLY_TABLES'] || '').split(',')
+  if ENV['ONLY_TABLES']
+    ENV['ONLY_TABLES'].split(',').map { |t| t.split('.') }
+  else
+    Redshift::Client.connection.exec(<<-EOF).to_a.map { |r| [ r['schemaname'], r['tablename'] ] }
+        SELECT schemaname, tablename
+        FROM pg_tables
+        WHERE schemaname NOT IN ('pg_catalog', 'information_schema', 'mailchimp')
+        AND tablename NOT IN ('users')
+        ORDER BY schemaname, tablename
+    EOF
+  end
 end
 
 def date_distribution_for_table(schemaname, tablename)
@@ -123,7 +123,6 @@ namespace :redshift do
     Redshift::Client.establish_connection
     tables.each do |schema, table|
       name = "#{schema}.#{table}"
-      next if !only_tables.empty? && !only_tables.include?(name)
       puts "#{name.ljust(50)} (#{archivable_for_table(schema, table).to_s.ljust(10)} archivable) #{Sparkr.sparkline(date_distribution_for_table(schema, table).map { |r| r['ct'] } )}"
     end
   end
@@ -133,7 +132,6 @@ namespace :redshift do
     row_count = 0
     tables.each do |schema, table|
       full_table_name = "#{schema}.#{table}"
-      next if !only_tables.empty? && !only_tables.include?(full_table_name)
       puts "Examining #{full_table_name}"
       row_count += unload_table!(schema, table)
     end
