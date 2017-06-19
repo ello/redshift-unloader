@@ -1,19 +1,25 @@
+GIT
+  remote: git://github.com/ello/redshift-client.git
+  revision: 6bd9b3825b63cad5db2e849db36c9b7972524b34
+  ref: jayzes/ssl-param
+  specs:
+    redshift-client (0.2.0)
+      activesupport (>= 4)
+      pg
+
 GEM
   remote: https://rubygems.org/
   specs:
-    activesupport (5.0.2)
+    activesupport (5.1.1)
       concurrent-ruby (~> 1.0, >= 1.0.2)
       i18n (~> 0.7)
       minitest (~> 5.1)
       tzinfo (~> 1.1)
     concurrent-ruby (1.0.5)
-    i18n (0.8.1)
-    minitest (5.10.1)
-    pg (0.20.0)
+    i18n (0.8.4)
+    minitest (5.10.2)
+    pg (0.21.0)
     rake (12.0.0)
-    redshift-client (0.2.0)
-      activesupport (>= 4)
-      pg
     sparkr (0.4.1)
     thread_safe (0.3.6)
     tzinfo (1.2.3)
@@ -24,8 +30,11 @@ PLATFORMS
 
 DEPENDENCIES
   rake
-  redshift-client
+  redshift-client!
   sparkr
 
+RUBY VERSION
+   ruby 2.3.4p301
+
 BUNDLED WITH
-   1.13.6
+   1.15.1
