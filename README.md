@@ -11,14 +11,15 @@ It's useful for automatically archiving data outside of a given retention window
 
 The script relies on a handful of environment variables - 
 
+- `REDSHIFT_URL` - URL to use to connect to the target Redshift instance/database
 - `AWS_ACCESS_KEY_ID` - an AWS IAM access key with access to both the Redshift instance and the S3 bucket
 - `AWS_SECRET_ACCESS_KEY` - the secret access key corresponding to the access key ID
 - `S3_BUCKET` - the bucket to unload data into
-- `ONLY_TABLES` - (optional) comma-separate list of fully-qualified (schema.tablename) tables to limit unload operations
+- `ONLY_TABLES` - (optional) comma-separated list of fully-qualified (i.e. schema.tablename) tables to limit unload operations to
 
-With those set, you  can run the following rake tasks:
+With those set, you can run the following Rake tasks:
 
-- `rake redshift:list_tables` - list all tables in the database along with the archivable rows in each
+- `rake redshift:list_tables` - list all tables in the database along with the count of archivable rows in each
 - `rake redshift:unload_all` - unload all tables in the database with eligible data to the specified S3 bucket
 
 ## Setup
