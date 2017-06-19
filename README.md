@@ -16,6 +16,7 @@ The script relies on a handful of environment variables -
 - `AWS_SECRET_ACCESS_KEY` - the secret access key corresponding to the access key ID
 - `S3_BUCKET` - the bucket to unload data into
 - `ONLY_TABLES` - (optional) comma-separated list of fully-qualified (i.e. schema.tablename) tables to limit unload operations to
+- `UNLOAD_ONLY` - (optional) only unload data, don't delete it
 
 With those set, you can run the following Rake tasks:
 

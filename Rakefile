@@ -62,7 +62,7 @@ def unload_table!(schema, table)
   row_count = 0
   while month < (Date.today - 365)
     row_count += unload_table_for_month!(schema, table, month)
-    clear_table_for_month!(schema, table, month)
+    clear_table_for_month!(schema, table, month) unless ENV['UNLOAD_ONLY']
     month = month.next_month
   end
   puts "Unloaded #{row_count} total rows for #{schema}.#{table}"
