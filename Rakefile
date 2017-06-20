@@ -44,12 +44,8 @@ def table_has_sent_at_column?(schema, table)
   EOF
 end
 
-def access_key_id
-  ENV['AWS_ACCESS_KEY_ID']
-end
-
-def secret_access_key
-  ENV['AWS_SECRET_ACCESS_KEY']
+def redshift_role_arn
+  ENV['REDSHIFT_ROLE_ARN']
 end
 
 def s3_bucket
@@ -93,8 +89,7 @@ def unload_table_for_month!(schema, table, month)
           AND sent_at < DATE_TRUNC(\\'month\\', TO_DATE(\\'#{month.next_month.strftime('%Y-%m-%d')}\\', \\'YYYY-MM-DD\\'))
       ')
       TO '#{s3_prefix}'
-      ACCESS_KEY_ID '#{access_key_id}'
-      SECRET_ACCESS_KEY '#{secret_access_key}'
+      IAM_ROLE '#{redshift_role_arn}'
       MANIFEST GZIP ADDQUOTES ESCAPE PARALLEL ON
     EOF
   end

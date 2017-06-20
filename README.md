@@ -12,8 +12,7 @@ It's useful for automatically archiving data outside of a given retention window
 The script relies on a handful of environment variables - 
 
 - `REDSHIFT_URL` - URL to use to connect to the target Redshift instance/database
-- `AWS_ACCESS_KEY_ID` - an AWS IAM access key with access to both the Redshift instance and the S3 bucket
-- `AWS_SECRET_ACCESS_KEY` - the secret access key corresponding to the access key ID
+- `REDSHIFT_ROLE_ARN` - an AWS IAM role attached to the cluster with access to the S3 bucket. See [the AWS docs](http://docs.aws.amazon.com/redshift/latest/dg/loading-data-access-permissions.html) for details on setting this up.
 - `S3_BUCKET` - the bucket to unload data into
 - `ONLY_TABLES` - (optional) comma-separated list of fully-qualified (i.e. schema.tablename) tables to limit unload operations to
 - `UNLOAD_ONLY` - (optional) only unload data, don't delete it
