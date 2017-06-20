@@ -1,7 +1,7 @@
 require 'rubygems'
 require 'redshift/client'
 require 'sparkr'
-require 'yaml'
+require 'honeybadger'
 
 STDOUT.sync = true
 
