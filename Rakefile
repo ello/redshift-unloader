@@ -26,7 +26,7 @@ def retention_interval
 end
 
 def prunable_for_table(schemaname, tablename)
-  Redshift::Client.connection.exec(<<-EOF)[0]['count']
+  Redshift::Client.connection.exec(<<-EOF)[0]['count'].to_i
     SELECT COUNT(1) FROM "#{schemaname}"."#{tablename}" WHERE sent_at < (current_date - interval '#{retention_interval}')
   EOF
 end
