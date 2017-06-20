@@ -3,6 +3,8 @@ require 'redshift/client'
 require 'sparkr'
 require 'yaml'
 
+STDOUT.sync = true
+
 START_MONTH = Date.parse('2015-03-01').freeze
 
 def tables
