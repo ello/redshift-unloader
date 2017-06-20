@@ -62,11 +62,15 @@ end
 namespace :redshift do
   task  :list_tables do
     Redshift::Client.establish_connection
+    row_count = 0
     tables.each do |schema, table|
       next unless table_has_sent_at_column?(schema, table)
       name = "#{schema}.#{table}"
-      puts "#{name.ljust(50)} (#{prunable_for_table(schema, table)} prunable)}"
+      prunable = prunable_for_table(schema, table)
+      puts "#{name.ljust(50)} (#{prunable} prunable)}"
+      row_count += prunable
     end
+    puts "Could prune #{row_count} total rows across #{tables.size} tables"
   end
 
   task :unload_all do
