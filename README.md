@@ -1,10 +1,10 @@
 <img src="http://d324imu86q1bqn.cloudfront.net/uploads/user/avatar/641/large_Ello.1000x1000.png" width="200px" height="200px" />
 
-# Redshift Unloader
+# Redshift Pruner
 
-This is a simple schedulable script that lets us unload (or reload) data from Redshift to S3 month-by-month.
+This is a simple schedulable script that lets us remove outdated [Segment Warehouse](https://segment.com/warehouses) data from Redshift.
 
-It's useful for automatically archiving data outside of a given retention window (i.e. 1y). 
+It's useful for automatically archiving data outside of a given retention window (i.e. after 6 months). 
 
 
 ## Configuring
@@ -12,15 +12,13 @@ It's useful for automatically archiving data outside of a given retention window
 The script relies on a handful of environment variables - 
 
 - `REDSHIFT_URL` - URL to use to connect to the target Redshift instance/database
-- `REDSHIFT_ROLE_ARN` - an AWS IAM role attached to the cluster with access to the S3 bucket. See [the AWS docs](http://docs.aws.amazon.com/redshift/latest/dg/loading-data-access-permissions.html) for details on setting this up.
-- `S3_BUCKET` - the bucket to unload data into
-- `ONLY_TABLES` - (optional) comma-separated list of fully-qualified (i.e. schema.tablename) tables to limit unload operations to
-- `UNLOAD_ONLY` - (optional) only unload data, don't delete it
+- `ONLY_TABLES` - (optional) comma-separated list of fully-qualified (i.e. schema.tablename) tables to which to limit pruning operations
+- `RETENTION_INTERVAL` - (optional, defaults to `365 days`) prune data older than this time ago, as specified by a [Postgres interval value](https://www.postgresql.org/docs/8.4/static/datatype-datetime.html)
 
 With those set, you can run the following Rake tasks:
 
-- `rake redshift:list_tables` - list all tables in the database along with the count of archivable rows in each
-- `rake redshift:unload_all` - unload all tables in the database with eligible data to the specified S3 bucket
+- `rake redshift:list_tables` - list all tables in the database along with the count of prunable rows in each
+- `rake redshift:prune_all` - prune data older than the specified threshold from all tables in the database
 
 ## Setup
 

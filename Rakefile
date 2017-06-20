@@ -21,15 +21,13 @@ def tables
   end
 end
 
-def date_distribution_for_table(schemaname, tablename)
-  Redshift::Client.connection.exec(<<-EOF)
-    SELECT DATE_TRUNC('month', sent_at) AS month, COUNT(1) AS ct FROM "#{schemaname}"."#{tablename}" GROUP BY 1 ORDER BY 1 ASC
-  EOF
+def retention_interval
+  ENV['RETENTION_INTERVAL'] || '365 days'
 end
 
-def archivable_for_table(schemaname, tablename, interval = '12 months')
+def prunable_for_table(schemaname, tablename)
   Redshift::Client.connection.exec(<<-EOF)[0]['count']
-    SELECT COUNT(1) FROM "#{schemaname}"."#{tablename}" WHERE sent_at < (current_date - interval '#{interval}')
+    SELECT COUNT(1) FROM "#{schemaname}"."#{tablename}" WHERE sent_at < (current_date - interval '#{retention_interval}')
   EOF
 end
 
@@ -46,70 +44,16 @@ def table_has_sent_at_column?(schema, table)
   EOF
 end
 
-def redshift_role_arn
-  ENV['REDSHIFT_ROLE_ARN']
-end
-
-def s3_bucket
-  ENV['S3_BUCKET']
-end
-
-def unload_table!(schema, table)
-  return 0 unless table_has_sent_at_column?(schema, table)
-  month = START_MONTH
-  row_count = 0
-  while month < (Date.today - 365)
-    row_count += unload_table_for_month!(schema, table, month)
-    clear_table_for_month!(schema, table, month) unless ENV['UNLOAD_ONLY']
-    month = month.next_month
-  end
-  puts "Unloaded #{row_count} total rows for #{schema}.#{table}"
-  row_count
-end
-
-def row_count_for_month(schema, table, month)
-  Redshift::Client.connection.exec(<<-EOF)[0]['count'].to_i
-    SELECT count(1) FROM #{schema}.#{table}
-    WHERE
-      sent_at >= DATE_TRUNC('month', TO_DATE('#{month.strftime('%Y-%m-%d')}', 'YYYY-MM-DD'))
-      AND sent_at < DATE_TRUNC('month', TO_DATE('#{month.next_month.strftime('%Y-%m-%d')}', 'YYYY-MM-DD'))
-  EOF
-end
-
-def unload_table_for_month!(schema, table, month)
-  row_count = row_count_for_month(schema, table, month)
+def prune_table!(schema, table)
+  row_count = prunable_for_table(schema, table)
   if row_count == 0
-    puts "No rows found for #{schema}.#{table} within #{month.strftime('%Y-%m')} -  skipping unload"
+    puts "No prunable rows found for #{schema}.#{table} -  skipping deletion"
   else
-    s3_prefix = "s3://#{s3_bucket}/unload/#{schema}/#{table}/#{month.strftime('%Y-%m')}/"
-    puts "Unloading #{row_count} rows for #{schema}.#{table} within #{month.strftime('%Y-%m')} to #{s3_prefix}"
-    Redshift::Client.connection.exec(<<-EOF)
-      UNLOAD ('
-        SELECT * FROM #{schema}.#{table}
-        WHERE
-          sent_at >= DATE_TRUNC(\\'month\\', TO_DATE(\\'#{month.strftime('%Y-%m-%d')}\\', \\'YYYY-MM-DD\\'))
-          AND sent_at < DATE_TRUNC(\\'month\\', TO_DATE(\\'#{month.next_month.strftime('%Y-%m-%d')}\\', \\'YYYY-MM-DD\\'))
-      ')
-      TO '#{s3_prefix}'
-      IAM_ROLE '#{redshift_role_arn}'
-      MANIFEST GZIP ADDQUOTES ESCAPE PARALLEL ON
-    EOF
-  end
-  row_count
-end
-
-def clear_table_for_month!(schema, table, month)
-  row_count = row_count_for_month(schema, table, month)
-  if row_count == 0
-    puts "No rows found for #{schema}.#{table} within #{month.strftime('%Y-%m')} -  skipping deletion"
-  else
-    puts "Clearing #{row_count} rows for #{schema}.#{table} within #{month.strftime('%Y-%m')}"
+    puts "Pruning #{row_count} rows for #{schema}.#{table}"
     Redshift::Client.connection.exec(<<-EOF)
       DELETE
         FROM #{schema}.#{table}
-        WHERE
-          sent_at >= DATE_TRUNC(\\'month\\', TO_DATE(\\'#{month.strftime('%Y-%m-%d')}\\', \\'YYYY-MM-DD\\'))
-          AND sent_at < DATE_TRUNC(\\'month\\', TO_DATE(\\'#{month.next_month.strftime('%Y-%m-%d')}\\', \\'YYYY-MM-DD\\'))
+        WHERE sent_at < (current_date - interval '#{retention_interval}')
     EOF
   end
   row_count
@@ -119,8 +63,9 @@ namespace :redshift do
   task  :list_tables do
     Redshift::Client.establish_connection
     tables.each do |schema, table|
+      next unless table_has_sent_at_column?(schema, table)
       name = "#{schema}.#{table}"
-      puts "#{name.ljust(50)} (#{archivable_for_table(schema, table).to_s.ljust(10)} archivable) #{Sparkr.sparkline(date_distribution_for_table(schema, table).map { |r| r['ct'] } )}"
+      puts "#{name.ljust(50)} (#{prunable_for_table(schema, table)} prunable)}"
     end
   end
 
@@ -128,11 +73,12 @@ namespace :redshift do
     Redshift::Client.establish_connection
     row_count = 0
     tables.each do |schema, table|
+      next unless table_has_sent_at_column?(schema, table)
       full_table_name = "#{schema}.#{table}"
       puts "Examining #{full_table_name}"
-      row_count += unload_table!(schema, table)
+      row_count += prune_table!(schema, table)
     end
-    puts "Unloaded #{row_count} total rows across #{tables.size} tables"
+    puts "Pruned #{row_count} total rows across #{tables.size} tables"
 
     puts "Vacuuming..."
     Redshift::Client.connection.exec('VACUUM FULL')
