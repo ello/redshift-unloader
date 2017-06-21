@@ -73,7 +73,7 @@ namespace :redshift do
     puts "Could prune #{row_count} total rows across #{tables.size} tables"
   end
 
-  task :unload_all do
+  task :prune_all do
     Redshift::Client.establish_connection
     row_count = 0
     tables.each do |schema, table|
