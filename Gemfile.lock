@@ -1,7 +1,7 @@
 GIT
-  remote: git://github.com/ello/redshift-client.git
-  revision: 6bd9b3825b63cad5db2e849db36c9b7972524b34
-  ref: jayzes/ssl-param
+  remote: git://github.com/dakatsuka/redshift-client.git
+  revision: e6146736180bada4c9e6a7747acb61f0159be3a9
+  ref: e614673
   specs:
     redshift-client (0.2.0)
       activesupport (>= 4)
