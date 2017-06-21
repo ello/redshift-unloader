@@ -67,7 +67,7 @@ namespace :redshift do
       next unless table_has_sent_at_column?(schema, table)
       name = "#{schema}.#{table}"
       prunable = prunable_for_table(schema, table)
-      puts "#{name.ljust(50)} (#{prunable} prunable)}"
+      puts "#{name.ljust(50)} (#{prunable} prunable)"
       row_count += prunable
     end
     puts "Could prune #{row_count} total rows across #{tables.size} tables"
